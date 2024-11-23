@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Chess Game",
+            "type": "shell",
+            "command": "cl",
+            "args": [
+                "/EHsc",
+                "/I", "C:\\FW\\SDL2-2.30.8-VC\\include",
+                "/link",
+                "/LIBPATH:C:\\FW\\SDL2-2.30.8-VC\\lib",
+                "C:\\FW\\SDL2-2.30.8-VC\\lib\\SDL2.lib",
+                "C:\\FW\\SDL2-2.30.8-VC\\lib\\SDL2main.lib",
+                "/out:chess_game.exe",
+                "*.cpp"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$msCompile"]
+        }
+    ]
+}
