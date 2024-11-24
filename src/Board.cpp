@@ -657,3 +657,14 @@ void Board::recordMove(const Move& move) {
 PiecePosition& Board::getPieceAt(int x, int y) {
     return board[y][x];
 }
+
+bool Board::isKingAlive(PieceColor color) {
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            if (board[y][x].piece == ChessPiece::KING && board[y][x].color == color) {
+                return true;
+            }
+        }
+    }
+    return false;
+}

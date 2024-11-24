@@ -38,7 +38,15 @@
 #include <SDL_image.h>
 #include <iostream>
 
-Game::Game() : window(nullptr), renderer(nullptr), isRunning(true), playerSide(0), difficulty(0), splashTexture(nullptr) {}
+Game::Game() : window(nullptr),
+      renderer(nullptr),
+      isRunning(true),
+      playerSide(0),
+      difficulty(0),
+      splashTexture(nullptr),
+      gameOver(false),
+      winner(PieceColor::NONE),
+      draggingPiece(false) {}
 
 Game::~Game() {
     cleanup();
@@ -149,30 +157,48 @@ void Game::handleEvents() {
             isRunning = false;
         }
 
-        // Handle key presses for player side selection
-        if (event.type == SDL_KEYDOWN && showQuestion) {
-            switch (event.key.keysym.sym) {
-                case SDLK_w:
-                    playerSideTxt = "White"; // For display purposes
-                    playerSide = 0;
-                    userColor = PieceColor::WHITE;
-                    computerColor = PieceColor::BLACK;
-                    currentPlayer = PieceColor::WHITE; // White moves first
-                    showQuestion = false;
-                    break;
-                case SDLK_b:
-                    playerSideTxt = "Black"; // For display purposes
-                    playerSide = 1;
-                    userColor = PieceColor::BLACK;
-                    computerColor = PieceColor::WHITE;
-                    currentPlayer = PieceColor::WHITE; // White moves first
-                    showQuestion = false;
-                    break;
+        // Handle key presses
+        if (event.type == SDL_KEYDOWN) {
+            if (gameOver && event.key.keysym.sym == SDLK_n) {
+                // Reset the game
+                gameOver = false;
+                showQuestion = true;
+                playerSideTxt = "undefined";
+                playerSide = 0;
+                userColor = PieceColor::WHITE;
+                computerColor = PieceColor::BLACK;
+                currentPlayer = PieceColor::WHITE;
+                draggingPiece = false;
+                // Re-initialize the board
+                board.cleanup();
+                board.initialize(renderer);
+            }
+
+            // Existing code for handling player side selection
+            if (showQuestion) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_w:
+                        playerSideTxt = "White"; // For display purposes
+                        playerSide = 0;
+                        userColor = PieceColor::WHITE;
+                        computerColor = PieceColor::BLACK;
+                        currentPlayer = PieceColor::WHITE; // White moves first
+                        showQuestion = false;
+                        break;
+                    case SDLK_b:
+                        playerSideTxt = "Black"; // For display purposes
+                        playerSide = 1;
+                        userColor = PieceColor::BLACK;
+                        computerColor = PieceColor::WHITE;
+                        currentPlayer = PieceColor::WHITE; // White moves first
+                        showQuestion = false;
+                        break;
+                }
             }
         }
 
         // Handle drag-and-drop for the user's turn
-        if (!showQuestion && currentPlayer == userColor) {
+        if (!showQuestion && currentPlayer == userColor && !gameOver) {
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 // Start dragging if a piece of the user's color is clicked
                 int squareSize = SCREEN_HEIGHT / 8;
@@ -208,6 +234,7 @@ void Game::handleEvents() {
     }
 }
 
+
 void Game::handlePlayerMove() {
     int squareSize = SCREEN_HEIGHT / 8;
     int dropX = mouseX / squareSize;
@@ -242,35 +269,25 @@ void Game::update() {
     // Update the board animations and game state
     board.update(deltaTime);
 
-    // Only proceed if not showing the splash screen and the player's side has been chosen
-    if (!showingSplash && !showQuestion) {
-        // Check if any animations are still in progress
-        if (!board.isAnimating()) {
+    if (!showingSplash && !showQuestion && !board.isAnimating() && !gameOver) {
+        // Check if any king is missing
+        if (!board.isKingAlive(userColor)) {
+            gameOver = true;
+            winner = computerColor;
+        } else if (!board.isKingAlive(computerColor)) {
+            gameOver = true;
+            winner = userColor;
+        } else {
+            // Proceed with the normal turn updates
             if (currentPlayer == computerColor) {
-                //td::cout << "It's the computer's turn (" 
-                //          << ((computerColor == PieceColor::WHITE) ? "White" : "Black") 
-                //          << ")." << std::endl;
-
-                // Computer's turn
                 board.computeComputerMove(computerColor, difficulty);
                 currentPlayer = userColor; // Switch to the user's turn
-                //std::cout << "Switching to user's turn (" 
-                //          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
-                //          << ")." << std::endl;
-
-            } else if (currentPlayer == userColor) {
-                //std::cout << "It's the user's turn (" 
-                //          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
-                //          << ")." << std::endl;
-
-                // User's turn - Placeholder for handling user input
-                // We will work on this later
             }
-        } else {
-            //std::cout << "Waiting for animations to finish." << std::endl;
+            // No need for else if since player's move is handled in handleEvents()
         }
     }
 }
+
 
 
 
@@ -287,11 +304,11 @@ void Game::render() {
     int boardSize = windowHeight;
 
     // Render the board on the left side
-    board.render(renderer, 0, 0, windowHeight, 
-             draggingPiece, draggedPiece, draggedPieceColor, 
+    board.render(renderer, 0, 0, windowHeight,
+             draggingPiece, draggedPiece, draggedPieceColor,
              dragStartX, dragStartY, mouseX, mouseY);
 
-    
+
     // Render info bar (dark gray area)
     SDL_Rect infoBar = {boardSize, 0, windowWidth - boardSize, windowHeight};
     SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);  // Dark gray for info bar
@@ -305,14 +322,6 @@ void Game::render() {
     // Render the title text
     renderText("Chess 2D SDL2", boardSize + 10, 10); // Adjust position as needed
 
-    // Draw dark blue rectangle for title background
-    SDL_Rect titleBackground2 = {boardSize, 0, windowWidth - boardSize, 50}; // Adjust height as needed
-    SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Dark blue color
-    SDL_RenderFillRect(renderer, &titleBackground2);
-
-    // Render the title text
-    renderText("Chess 2D SDL2", boardSize + 10, 10); // Adjust position as needed
-
     // Draw green rectangle for player info
     SDL_Rect playerInfoBackground = {boardSize, 50, windowWidth - boardSize, 50}; // Adjust height as needed
     SDL_SetRenderDrawColor(renderer, 0, 128, 0, 255); // Green color
@@ -321,18 +330,40 @@ void Game::render() {
     // Render player info text
     renderText("You play: " + playerSideTxt, boardSize + 10, 60, windowWidth - boardSize - 20); // Position below title
 
+    // Draw dark red rectangle for current turn or game over message
+    SDL_Rect messageBackground = {boardSize, 100, windowWidth - boardSize, 50}; // Adjust height as needed
+    SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255); // Dark red color
+    SDL_RenderFillRect(renderer, &messageBackground);
+
+    // Determine the message to display
+    std::string message;
+    if (gameOver) {
+        if (winner == userColor) {
+            message = "You win! Press N to start again";
+        } else {
+            message = "You lose. Press N to start again";
+        }
+    } else if (!showQuestion) {
+        message = (currentPlayer == PieceColor::WHITE) ? "White turn" : "Black turn";
+    } else {
+        message = ""; // Empty if the game hasn't started
+    }
+
+    // Render the message text
+    renderText(message, boardSize + 10, 110, windowWidth - boardSize - 20);
+
     // If showing question
     if (showQuestion) {
-        SDL_Rect questionBackground = {boardSize, 100, windowWidth - boardSize, 150}; // Adjust height as needed
+        SDL_Rect questionBackground = {boardSize, 150, windowWidth - boardSize, 150}; // Adjust height as needed
         SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255); // Darker green color for question box
         SDL_RenderFillRect(renderer, &questionBackground);
 
-        renderText("What side do you want to play? Press W for white or B for black.", boardSize + 10, 110, windowWidth - boardSize - 20);
+        renderText("What side do you want to play? Press W for white or B for black.", boardSize + 10, 160, windowWidth - boardSize - 20);
     }
-
 
     SDL_RenderPresent(renderer);
 }
+
 
 void Game::renderText(const std::string& message, int x, int y) {
     SDL_Color textColor = {255, 255, 255}; // White color

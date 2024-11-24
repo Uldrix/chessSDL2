@@ -87,6 +87,8 @@ public:
     void recordMove(const Move& move);
     PiecePosition& getPieceAt(int x, int y);
 
+    bool isKingAlive(PieceColor color);
+
 private:
     SDL_Texture* piecesTexture;
     std::map<std::string, std::map<ChessPiece, SDL_Rect>> pieceDimensions;

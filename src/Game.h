@@ -42,7 +42,7 @@
 
 class Game {
 public:
-    static const int SCREEN_WIDTH = 1400;
+    static const int SCREEN_WIDTH = 1500;
     static const int SCREEN_HEIGHT = 1080;
 
     Game();
@@ -57,6 +57,9 @@ private:
     void cleanup();
     void renderText(const std::string& message, int x, int y);
     void renderText(const std::string& message, int x, int y, int boxWidth);
+
+    bool gameOver;              // To track if the game is over
+    PieceColor winner;          // To track who won
 
     Uint32 lastUpdateTime;
 
