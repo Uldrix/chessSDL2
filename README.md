@@ -35,3 +35,13 @@
 
 # chessSDL2
 chess game in C++ and SDL2
+
+# SETUP
+
+Dev tools
+- VSCode
+- MSVC (for windows)
+
+Under windows :
+- install SDL2 for MSVC
+- install SDL2 Image for MSVC with webp support
