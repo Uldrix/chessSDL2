@@ -127,6 +127,7 @@ void Game::initialize() {
 
     playerSideTxt = "undefined"; // Initial state
     showQuestion = true; // Show question by default
+    difficulty = 3; //insane
 
     // Initialize the board
     board.initialize(renderer);
