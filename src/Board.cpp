@@ -103,12 +103,25 @@ void Board::render(SDL_Renderer* renderer, int x, int y, int size,
 
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
-            if (board[row][col].piece != ChessPiece::EMPTY) {
-                // Skip rendering the dragged piece at its original position
-                if (draggingPiece && dragStartX == col && dragStartY == row) {
-                    continue;
-                }
+            // Skip rendering the dragged piece at its original position
+            if (draggingPiece && dragStartX == col && dragStartY == row) {
+                continue;
+            }
 
+            // Skip rendering animated pieces at their destination
+            bool isAnimatingToThisSquare = false;
+            for (const auto& animatedPiece : animatedPieces) {
+                if (static_cast<int>(animatedPiece.endX) == col &&
+                    static_cast<int>(animatedPiece.endY) == row) {
+                    isAnimatingToThisSquare = true;
+                    break;
+                }
+            }
+            if (isAnimatingToThisSquare) {
+                continue;
+            }
+
+            if (board[row][col].piece != ChessPiece::EMPTY) {
                 renderPiece(renderer,
                             board[row][col].piece,
                             board[row][col].color,
@@ -142,6 +155,7 @@ void Board::render(SDL_Renderer* renderer, int x, int y, int size,
                     maxPieceSize);
     }
 }
+
 
 
 
