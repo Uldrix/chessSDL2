@@ -120,7 +120,11 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    // Update game logic here
+    Uint32 currentTime = SDL_GetTicks();
+    float deltaTime = (currentTime - lastUpdateTime) / 1000.0f;
+    lastUpdateTime = currentTime;
+
+    board.update(deltaTime);
 }
 
 void Game::render() {
@@ -163,6 +167,10 @@ void Game::cleanup() {
 
 void Game::run() {
     initialize();
+     lastUpdateTime = SDL_GetTicks();
+
+    //board.movePiece(ChessPiece::PAWN, "white", 4, 6, 4, 4, 2.0f); // Move white pawn from e2 to e4 with speed 2
+
 
     while (isRunning) {
         handleEvents();

@@ -54,6 +54,8 @@ private:
     void render();
     void cleanup();
 
+    Uint32 lastUpdateTime;
+
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* splashTexture;
