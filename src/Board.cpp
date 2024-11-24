@@ -79,7 +79,9 @@ void Board::initialize(SDL_Renderer* renderer) {
     }
 }
 
-void Board::render(SDL_Renderer* renderer, int x, int y, int size) {
+void Board::render(SDL_Renderer* renderer, int x, int y, int size, 
+                   bool draggingPiece, ChessPiece draggedPiece, PieceColor draggedPieceColor, 
+                   int dragStartX, int dragStartY, int mouseX, int mouseY) {
     int squareSize = size / 8;
 
     // Render the board
@@ -102,6 +104,11 @@ void Board::render(SDL_Renderer* renderer, int x, int y, int size) {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             if (board[row][col].piece != ChessPiece::EMPTY) {
+                // Skip rendering the dragged piece at its original position
+                if (draggingPiece && dragStartX == col && dragStartY == row) {
+                    continue;
+                }
+
                 renderPiece(renderer,
                             board[row][col].piece,
                             board[row][col].color,
@@ -110,6 +117,19 @@ void Board::render(SDL_Renderer* renderer, int x, int y, int size) {
                             maxPieceSize);
             }
         }
+    }
+
+    // Render the dragged piece (if any) at the current mouse position
+    if (draggingPiece) {
+        int dragOffsetX = mouseX - squareSize / 2; // Center the piece under the mouse
+        int dragOffsetY = mouseY - squareSize / 2;
+
+        renderPiece(renderer,
+                    draggedPiece,
+                    draggedPieceColor,
+                    dragOffsetX,
+                    dragOffsetY,
+                    maxPieceSize);
     }
 
     // Render animated pieces
@@ -122,6 +142,8 @@ void Board::render(SDL_Renderer* renderer, int x, int y, int size) {
                     maxPieceSize);
     }
 }
+
+
 
 void Board::renderPiece(SDL_Renderer* renderer,
                         ChessPiece piece,
@@ -264,8 +286,8 @@ void Board::computeComputerMove(PieceColor color, int difficulty) {
                     ? legalMoves[rand() % legalMoves.size()]
                     : findBestMove(color, difficulty + 1); // Depth increases with difficulty
 
-    std::cout << "Computer selected move from (" << bestMove.fromX << ", " << bestMove.fromY 
-              << ") to (" << bestMove.toX << ", " << bestMove.toY << ")" << std::endl;
+    //std::cout << "Computer selected move from (" << bestMove.fromX << ", " << bestMove.fromY 
+    //          << ") to (" << bestMove.toX << ", " << bestMove.toY << ")" << std::endl;
 
     // Apply the move
     movePiece(bestMove.piece, bestMove.color, bestMove.fromX, bestMove.fromY, bestMove.toX, bestMove.toY, 2.0f);
@@ -549,9 +571,29 @@ void Board::undoMove(const Move& move) {
 
 bool Board::isAnimating() const {
     if (!animatedPieces.empty()) {
-        std::cout << "Animation in progress. Animated pieces count: " << animatedPieces.size() << std::endl;
+        //std::cout << "Animation in progress. Animated pieces count: " << animatedPieces.size() << std::endl;
         return true;
     }
     return false;
 }
 
+
+bool Board::isLegalMove(int fromX, int fromY, int toX, int toY, ChessPiece piece, PieceColor color) {
+    std::vector<Move> legalMoves = generatePieceMoves(fromX, fromY, piece, color);
+
+    // Check if the destination matches any legal move
+    for (const Move& move : legalMoves) {
+        if (move.toX == toX && move.toY == toY) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Board::recordMove(const Move& move) {
+    moveHistory.push({move, board[move.toY][move.toX]});
+}
+
+PiecePosition& Board::getPieceAt(int x, int y) {
+    return board[y][x];
+}

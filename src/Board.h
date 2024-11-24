@@ -73,12 +73,19 @@ struct MoveHistoryEntry {
 class Board {
 public:
     void initialize(SDL_Renderer* renderer);
-    void render(SDL_Renderer* renderer, int x, int y, int size);
+    void render(SDL_Renderer* renderer, int x, int y, int size, 
+                   bool draggingPiece, ChessPiece draggedPiece, PieceColor draggedPieceColor, 
+                   int dragStartX, int dragStartY, int mouseX, int mouseY);
+
     void cleanup();
     void movePiece(ChessPiece piece, PieceColor color, int fromX, int fromY, int toX, int toY, float speed);
     void computeComputerMove(PieceColor color, int difficulty);
     void update(float deltaTime);
     bool isAnimating() const; 
+    std::stack<MoveHistoryEntry> moveHistory; // Stack to keep track of moves for undoing
+    bool isLegalMove(int fromX, int fromY, int toX, int toY, ChessPiece piece, PieceColor color);
+    void recordMove(const Move& move);
+    PiecePosition& getPieceAt(int x, int y);
 
 private:
     SDL_Texture* piecesTexture;
@@ -123,5 +130,5 @@ private:
     void makeMove(const Move& move);
     void undoMove(const Move& move);
 
-    std::stack<MoveHistoryEntry> moveHistory; // Stack to keep track of moves for undoing
+    
 };

@@ -149,6 +149,7 @@ void Game::handleEvents() {
             isRunning = false;
         }
 
+        // Handle key presses for player side selection
         if (event.type == SDL_KEYDOWN && showQuestion) {
             switch (event.key.keysym.sym) {
                 case SDLK_w:
@@ -170,8 +171,64 @@ void Game::handleEvents() {
             }
         }
 
+        // Handle drag-and-drop for the user's turn
+        if (!showQuestion && currentPlayer == userColor) {
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                // Start dragging if a piece of the user's color is clicked
+                int squareSize = SCREEN_HEIGHT / 8;
+                int clickedX = event.button.x / squareSize;
+                int clickedY = event.button.y / squareSize;
+
+                PiecePosition& pos = board.getPieceAt(clickedX, clickedY);
+                if (pos.color == userColor) {
+                    draggingPiece = true;
+                    draggedPiece = pos.piece;
+                    draggedPieceColor = pos.color;
+                    dragStartX = clickedX;
+                    dragStartY = clickedY;
+                    mouseX = event.button.x;
+                    mouseY = event.button.y;
+                }
+            }
+
+            if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+                // Finalize the drag-and-drop move
+                if (draggingPiece) {
+                    handlePlayerMove();
+                    draggingPiece = false;
+                }
+            }
+
+            if (event.type == SDL_MOUSEMOTION && draggingPiece) {
+                // Update the mouse position for dragging
+                mouseX = event.motion.x;
+                mouseY = event.motion.y;
+            }
+        }
     }
 }
+
+void Game::handlePlayerMove() {
+    int squareSize = SCREEN_HEIGHT / 8;
+    int dropX = mouseX / squareSize;
+    int dropY = mouseY / squareSize;
+
+    if (board.isLegalMove(dragStartX, dragStartY, dropX, dropY, draggedPiece, userColor)) {
+        // Apply the move if legal
+        board.movePiece(draggedPiece, userColor, dragStartX, dragStartY, dropX, dropY, 2.0f);
+
+        // Store the move in the history
+        board.recordMove({dragStartX, dragStartY, dropX, dropY, draggedPiece, userColor});
+
+        // Switch to computer's turn
+        currentPlayer = computerColor;
+    } else {
+        // Reset piece to its initial position
+        //std::cout << "Illegal move. Try again!" << std::endl;
+    }
+}
+
+
 
 
 
@@ -190,27 +247,27 @@ void Game::update() {
         // Check if any animations are still in progress
         if (!board.isAnimating()) {
             if (currentPlayer == computerColor) {
-                std::cout << "It's the computer's turn (" 
-                          << ((computerColor == PieceColor::WHITE) ? "White" : "Black") 
-                          << ")." << std::endl;
+                //td::cout << "It's the computer's turn (" 
+                //          << ((computerColor == PieceColor::WHITE) ? "White" : "Black") 
+                //          << ")." << std::endl;
 
                 // Computer's turn
                 board.computeComputerMove(computerColor, difficulty);
                 currentPlayer = userColor; // Switch to the user's turn
-                std::cout << "Switching to user's turn (" 
-                          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
-                          << ")." << std::endl;
+                //std::cout << "Switching to user's turn (" 
+                //          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
+                //          << ")." << std::endl;
 
             } else if (currentPlayer == userColor) {
-                std::cout << "It's the user's turn (" 
-                          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
-                          << ")." << std::endl;
+                //std::cout << "It's the user's turn (" 
+                //          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
+                //          << ")." << std::endl;
 
                 // User's turn - Placeholder for handling user input
                 // We will work on this later
             }
         } else {
-            std::cout << "Waiting for animations to finish." << std::endl;
+            //std::cout << "Waiting for animations to finish." << std::endl;
         }
     }
 }
@@ -230,7 +287,10 @@ void Game::render() {
     int boardSize = windowHeight;
 
     // Render the board on the left side
-    board.render(renderer, 0, 0, boardSize);
+    board.render(renderer, 0, 0, windowHeight, 
+             draggingPiece, draggedPiece, draggedPieceColor, 
+             dragStartX, dragStartY, mouseX, mouseY);
+
     
     // Render info bar (dark gray area)
     SDL_Rect infoBar = {boardSize, 0, windowWidth - boardSize, windowHeight};

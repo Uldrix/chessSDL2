@@ -64,6 +64,14 @@ private:
     std::string playerSideTxt; // Store player side (white or black)
     bool showQuestion; // Flag to show question
 
+    bool draggingPiece;
+    ChessPiece draggedPiece;
+    PieceColor draggedPieceColor;
+    int dragStartX, dragStartY;
+    int mouseX, mouseY;
+
+    void handlePlayerMove(); // Handles player moves
+
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* splashTexture;
