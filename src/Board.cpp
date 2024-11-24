@@ -191,23 +191,41 @@ void Board::renderPiece(SDL_Renderer* renderer,
 }
 
 void Board::movePiece(ChessPiece piece, PieceColor color, int fromX, int fromY, int toX, int toY, float speed) {
-    board[toY][toX] = board[fromY][fromX];
-    board[fromY][fromX] = {ChessPiece::EMPTY, PieceColor::NONE};
+    PiecePosition& fromPos = board[fromY][fromX];
+    PiecePosition& toPos = board[toY][toX];
 
-    // Add animation
+    // Check board state before move
+    if (fromPos.piece != piece || fromPos.color != color) {
+        std::cerr << "Error: Mismatch before move. Expected piece " << static_cast<int>(fromPos.piece)
+                  << " at (" << fromX << ", " << fromY << ")" << std::endl;
+    }
+
+    // Update the board
+    toPos = fromPos;
+    fromPos = {ChessPiece::EMPTY, PieceColor::NONE};
+
+    // Add the piece to the animated list
     animatedPieces.push_back({
-        piece,
-        color,
-        static_cast<float>(fromX),
-        static_cast<float>(fromY),
-        static_cast<float>(toX),
-        static_cast<float>(toY),
-        static_cast<float>(fromX),
-        static_cast<float>(fromY),
+        piece, color,
+        static_cast<float>(fromX), static_cast<float>(fromY),
+        static_cast<float>(toX), static_cast<float>(toY),
+        static_cast<float>(fromX), static_cast<float>(fromY),
         speed,
         true
     });
+
+    // Log updated board state
+    std::cout << "Board updated after move:" << std::endl;
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            std::cout << static_cast<int>(board[row][col].piece) << " ";
+        }
+        std::cout << std::endl;
+    }
 }
+
+
+
 
 
 
@@ -288,54 +306,80 @@ void Board::initializePieceDimensions() {
 }
 
 void Board::computeComputerMove(PieceColor color, int difficulty) {
-    // Generate all legal moves
     std::vector<Move> legalMoves = generateAllLegalMoves(color);
 
     if (legalMoves.empty()) {
-        //std::cerr << "No legal moves available for " << color << ". Game over." << std::endl;
+        std::cerr << "No legal moves available for "  << ". Game over." << std::endl;
         return;
     }
 
     Move bestMove = (difficulty == 0)
                     ? legalMoves[rand() % legalMoves.size()]
-                    : findBestMove(color, difficulty + 1); // Depth increases with difficulty
+                    : findBestMove(color, difficulty + 1);
 
-    //std::cout << "Computer selected move from (" << bestMove.fromX << ", " << bestMove.fromY 
-    //          << ") to (" << bestMove.toX << ", " << bestMove.toY << ")" << std::endl;
+    // Log move and board state
+    std::cout << "Computer selected move from (" << bestMove.fromX << ", " << bestMove.fromY 
+              << ") to (" << bestMove.toX << ", " << bestMove.toY << ")"
+              << " for piece " << static_cast<int>(bestMove.piece) << std::endl;
 
-    // Apply the move
+    // Ensure board state is consistent
+    ChessPiece actualPiece = board[bestMove.fromY][bestMove.fromX].piece;
+    if (actualPiece != bestMove.piece) {
+        std::cerr << "Mismatch: Expected piece " << static_cast<int>(actualPiece)
+                  << " but got " << static_cast<int>(bestMove.piece) << std::endl;
+        bestMove.piece = actualPiece; // Correct the piece
+    }
+
     movePiece(bestMove.piece, bestMove.color, bestMove.fromX, bestMove.fromY, bestMove.toX, bestMove.toY, 2.0f);
 }
 
 
 
+
+
 std::vector<Move> Board::generateAllLegalMoves(PieceColor color) {
     std::vector<Move> moves;
-    bool debug = false; // Turn on/off debug logging
 
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
             PiecePosition& pos = board[y][x];
             if (pos.color == color) {
+                if (pos.piece == ChessPiece::EMPTY) {
+                    std::cerr << "Warning: Empty piece found at (" << x << ", " << y << ")" << std::endl;
+                }
                 std::vector<Move> pieceMoves = generatePieceMoves(x, y, pos.piece, pos.color);
                 moves.insert(moves.end(), pieceMoves.begin(), pieceMoves.end());
-                if (debug) {
-                    std::cout << "Generated " << pieceMoves.size() << " moves for " 
-                              << static_cast<int>(pos.color) << " " 
-                              << static_cast<int>(pos.piece) << " at (" << x << ", " << y << ")" 
-                              << std::endl;
-                }
             }
         }
     }
+
     return moves;
 }
 
 
+/*
+void logBoardState(const Board& board) {
+    std::cout << "Current board state:" << std::endl;
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            const PiecePosition& pos = board.getPieceAt(x, y);
+            std::cout << static_cast<int>(pos.piece) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+*/
 
 
 std::vector<Move> Board::generatePieceMoves(int x, int y, ChessPiece piece, PieceColor color) {
     std::vector<Move> moves;
+
+    // Ensure the piece matches the board state
+    if (board[y][x].piece != piece || board[y][x].color != color) {
+        std::cerr << "Error: Piece mismatch during move generation at (" << x << ", " << y << "). "
+                  << "Expected piece " << static_cast<int>(board[y][x].piece)
+                  << ", got " << static_cast<int>(piece) << std::endl;
+    }
 
     switch (piece) {
         case ChessPiece::PAWN:
@@ -362,6 +406,8 @@ std::vector<Move> Board::generatePieceMoves(int x, int y, ChessPiece piece, Piec
 
     return moves;
 }
+
+
 
 void Board::generatePawnMoves(int x, int y, PieceColor color, std::vector<Move>& moves) {
     int direction = (color == PieceColor::WHITE) ? -1 : 1;
