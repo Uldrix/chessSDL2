@@ -37,6 +37,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <sstream>
 #include "Board.h"
 
 class Game {
@@ -55,10 +56,13 @@ private:
     void render();
     void cleanup();
     void renderText(const std::string& message, int x, int y);
+    void Game::renderText(const std::string& message, int x, int y, int boxWidth);
 
     Uint32 lastUpdateTime;
 
     TTF_Font* font;
+    std::string playerSideTxt; // Store player side (white or black)
+    bool showQuestion; // Flag to show question
 
     SDL_Window* window;
     SDL_Renderer* renderer;

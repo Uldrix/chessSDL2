@@ -125,6 +125,9 @@ void Game::initialize() {
     splashStartTime = SDL_GetTicks();
     showingSplash = true;
 
+    playerSideTxt = "undefined"; // Initial state
+    showQuestion = true; // Show question by default
+
     // Initialize the board
     board.initialize(renderer);
 }
@@ -135,8 +138,24 @@ void Game::handleEvents() {
         if (event.type == SDL_QUIT) {
             isRunning = false;
         }
+
+        if (event.type == SDL_KEYDOWN && showQuestion) {
+            switch (event.key.keysym.sym) {
+                case SDLK_w:
+                    playerSideTxt = "White";
+                    playerSide = 0;
+                    showQuestion = false; // Hide question after selection
+                    break;
+                case SDLK_b:
+                    playerSideTxt = "Black";
+                    playerSide = 1;
+                    showQuestion = false; // Hide question after selection
+                    break;
+            }
+        }
     }
 }
+
 
 void Game::update() {
     Uint32 currentTime = SDL_GetTicks();
@@ -172,6 +191,31 @@ void Game::render() {
     // Render the title text
     renderText("Chess 2D SDL2", boardSize + 10, 10); // Adjust position as needed
 
+    // Draw dark blue rectangle for title background
+    SDL_Rect titleBackground2 = {boardSize, 0, windowWidth - boardSize, 50}; // Adjust height as needed
+    SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Dark blue color
+    SDL_RenderFillRect(renderer, &titleBackground2);
+
+    // Render the title text
+    renderText("Chess 2D SDL2", boardSize + 10, 10); // Adjust position as needed
+
+    // Draw green rectangle for player info
+    SDL_Rect playerInfoBackground = {boardSize, 50, windowWidth - boardSize, 50}; // Adjust height as needed
+    SDL_SetRenderDrawColor(renderer, 0, 128, 0, 255); // Green color
+    SDL_RenderFillRect(renderer, &playerInfoBackground);
+
+    // Render player info text
+    renderText("You play: " + playerSideTxt, boardSize + 10, 60, windowWidth - boardSize - 20); // Position below title
+
+    // If showing question
+    if (showQuestion) {
+        SDL_Rect questionBackground = {boardSize, 100, windowWidth - boardSize, 150}; // Adjust height as needed
+        SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255); // Darker green color for question box
+        SDL_RenderFillRect(renderer, &questionBackground);
+
+        renderText("What side do you want to play? Press W for white or B for black.", boardSize + 10, 110, windowWidth - boardSize - 20);
+    }
+
 
     SDL_RenderPresent(renderer);
 }
@@ -206,6 +250,67 @@ void Game::renderText(const std::string& message, int x, int y) {
     SDL_FreeSurface(textSurface);
 }
 
+void Game::renderText(const std::string& message, int x, int y, int boxWidth) {
+    SDL_Color textColor = {255, 255, 255}; // White color
+    std::string word;
+    std::istringstream stream(message);
+    std::vector<std::string> lines;
+    std::string currentLine;
+
+    // Break the message into words and wrap them
+    while (stream >> word) {
+        // Create a test surface for the current line plus the new word
+        std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+        SDL_Surface* testSurface = TTF_RenderText_Solid(font, testLine.c_str(), textColor);
+        
+        if (testSurface) {
+            // Check if the width exceeds boxWidth
+            if (testSurface->w > boxWidth) {
+                // If it does, push the current line to lines and start a new line
+                lines.push_back(currentLine);
+                currentLine = word; // Start new line with the new word
+            } else {
+                currentLine = testLine; // Add word to the current line
+            }
+            SDL_FreeSurface(testSurface);
+        }
+    }
+    
+    // Add any remaining text in the current line
+    if (!currentLine.empty()) {
+        lines.push_back(currentLine);
+    }
+
+    // Render each line
+    for (size_t i = 0; i < lines.size(); ++i) {
+        SDL_Surface* textSurface = TTF_RenderText_Solid(font, lines[i].c_str(), textColor);
+        if (!textSurface) {
+            std::cerr << "Unable to render text surface! TTF_Error: " << TTF_GetError() << std::endl;
+            continue;
+        }
+
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        if (!textTexture) {
+            std::cerr << "Unable to create texture from rendered text! SDL_Error: " << SDL_GetError() << std::endl;
+            SDL_FreeSurface(textSurface);
+            continue;
+        }
+
+        // Get width and height of the texture
+        int width = textSurface->w;
+        int height = textSurface->h;
+
+        // Set up destination rectangle for rendering
+        SDL_Rect renderQuad = {x, y + static_cast<int>(i * height), width, height};
+
+        // Draw the texture
+        SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+
+        // Clean up
+        SDL_DestroyTexture(textTexture);
+        SDL_FreeSurface(textSurface);
+    }
+}
 
 
 
