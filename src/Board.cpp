@@ -526,6 +526,7 @@ void Board::generateKingMoves(int x, int y, PieceColor color, std::vector<Move>&
     }
 }
 
+/*
 Move Board::findBestMove(PieceColor color, int depth) {
     int bestScore = -1000000;
     Move bestMove;
@@ -543,6 +544,36 @@ Move Board::findBestMove(PieceColor color, int depth) {
     }
     return bestMove;
 }
+*/
+Move Board::findBestMove(PieceColor color, int depth) {
+    int bestScore = -1000000;
+    std::vector<Move> bestMoves;
+    std::vector<Move> legalMoves = generateAllLegalMoves(color);
+
+    for (const Move& move : legalMoves) {
+        makeMove(move);
+        int score = minimax(depth - 1, false, color);
+        undoMove(move);
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMoves.clear();
+            bestMoves.push_back(move);
+        } else if (score == bestScore) {
+            bestMoves.push_back(move);
+        }
+    }
+
+    // Randomly select among the best moves
+    if (!bestMoves.empty()) {
+        int index = rand() % bestMoves.size();
+        return bestMoves[index];
+    } else {
+        // Should not reach here
+        return legalMoves[0];
+    }
+}
+
 
 int Board::minimax(int depth, bool isMaximizingPlayer, PieceColor color) {
     if (depth == 0) {
@@ -576,6 +607,8 @@ int Board::minimax(int depth, bool isMaximizingPlayer, PieceColor color) {
     return bestScore;
 }
 
+
+/*
 int Board::evaluateBoard(PieceColor color) {
     int score = 0;
     for (int y = 0; y < 8; ++y) {
@@ -593,6 +626,27 @@ int Board::evaluateBoard(PieceColor color) {
     }
     return score;
 }
+*/
+int Board::evaluateBoard(PieceColor color) {
+    int score = 0;
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            PiecePosition& pos = board[y][x];
+            if (pos.piece != ChessPiece::EMPTY) {
+                int pieceValue = getPieceValue(pos.piece);
+                if (pos.color == color) {
+                    score += pieceValue;
+                } else {
+                    score -= pieceValue;
+                }
+            }
+        }
+    }
+    // Add a small random factor
+    score += (rand() % 10) - 5; // Random number between -5 and 4
+    return score;
+}
+
 
 int Board::getPieceValue(ChessPiece piece) {
     switch (piece) {
