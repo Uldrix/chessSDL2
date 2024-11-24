@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run ChessGame",
+            "name": "Debug Chess Game",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/ChessGame.exe",
@@ -10,7 +10,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false
+            "console": "externalTerminal"
         }
     ]
 }
