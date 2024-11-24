@@ -129,6 +129,15 @@ void Game::initialize() {
     showQuestion = true; // Show question by default
     difficulty = 3; //insane
 
+    if (playerSide == 0) {
+        userColor = PieceColor::WHITE;
+        computerColor = PieceColor::BLACK;
+    } else {
+        userColor = PieceColor::BLACK;
+        computerColor = PieceColor::WHITE;
+    }
+    currentPlayer = PieceColor::WHITE; // White moves first in chess
+
     // Initialize the board
     board.initialize(renderer);
 }
@@ -143,28 +152,72 @@ void Game::handleEvents() {
         if (event.type == SDL_KEYDOWN && showQuestion) {
             switch (event.key.keysym.sym) {
                 case SDLK_w:
-                    playerSideTxt = "White";
+                    playerSideTxt = "White"; // For display purposes
                     playerSide = 0;
-                    showQuestion = false; // Hide question after selection
+                    userColor = PieceColor::WHITE;
+                    computerColor = PieceColor::BLACK;
+                    currentPlayer = PieceColor::WHITE; // White moves first
+                    showQuestion = false;
                     break;
                 case SDLK_b:
-                    playerSideTxt = "Black";
+                    playerSideTxt = "Black"; // For display purposes
                     playerSide = 1;
-                    showQuestion = false; // Hide question after selection
+                    userColor = PieceColor::BLACK;
+                    computerColor = PieceColor::WHITE;
+                    currentPlayer = PieceColor::WHITE; // White moves first
+                    showQuestion = false;
                     break;
             }
         }
+
     }
 }
 
+
+
+// Game.cpp
 
 void Game::update() {
     Uint32 currentTime = SDL_GetTicks();
     float deltaTime = (currentTime - lastUpdateTime) / 1000.0f;
     lastUpdateTime = currentTime;
 
+    // Update the board animations and game state
     board.update(deltaTime);
+
+    // Only proceed if not showing the splash screen and the player's side has been chosen
+    if (!showingSplash && !showQuestion) {
+        // Check if any animations are still in progress
+        if (!board.isAnimating()) {
+            if (currentPlayer == computerColor) {
+                std::cout << "It's the computer's turn (" 
+                          << ((computerColor == PieceColor::WHITE) ? "White" : "Black") 
+                          << ")." << std::endl;
+
+                // Computer's turn
+                board.computeComputerMove(computerColor, difficulty);
+                currentPlayer = userColor; // Switch to the user's turn
+                std::cout << "Switching to user's turn (" 
+                          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
+                          << ")." << std::endl;
+
+            } else if (currentPlayer == userColor) {
+                std::cout << "It's the user's turn (" 
+                          << ((userColor == PieceColor::WHITE) ? "White" : "Black") 
+                          << ")." << std::endl;
+
+                // User's turn - Placeholder for handling user input
+                // We will work on this later
+            }
+        } else {
+            std::cout << "Waiting for animations to finish." << std::endl;
+        }
+    }
 }
+
+
+
+
 
 void Game::render() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);

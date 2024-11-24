@@ -56,7 +56,7 @@ private:
     void render();
     void cleanup();
     void renderText(const std::string& message, int x, int y);
-    void Game::renderText(const std::string& message, int x, int y, int boxWidth);
+    void renderText(const std::string& message, int x, int y, int boxWidth);
 
     Uint32 lastUpdateTime;
 
@@ -71,6 +71,9 @@ private:
     bool isRunning;
     int playerSide; // 0 for white, 1 for black
     int difficulty; // 0 for easy, 1 for medium, 2 for hard, 3 for insane
+    PieceColor  currentPlayer; // "white" or "black"
+    PieceColor  userColor;
+    PieceColor  computerColor;
 
     Uint32 splashStartTime;
     bool showingSplash;
