@@ -45,3 +45,7 @@ Dev tools
 Under windows :
 - install SDL2 for MSVC
 - install SDL2 Image for MSVC with webp support
+
+WARNING
+=======
+>>> DEVELOPPMENT IN PROGRESS <<<
