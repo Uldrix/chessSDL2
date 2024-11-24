@@ -42,6 +42,11 @@ Game::Game() : window(nullptr), renderer(nullptr), isRunning(true), playerSide(0
 
 Game::~Game() {
     cleanup();
+    if (font) {
+        TTF_CloseFont(font);
+    }
+    TTF_Quit();
+
 }
 
 void Game::initialize() {
@@ -85,6 +90,20 @@ void Game::initialize() {
         isRunning = false;
         return;
     }
+
+    if (TTF_Init() == -1) {
+        std::cerr << "TTF could not initialize! TTF_Error: " << TTF_GetError() << std::endl;
+        isRunning = false;
+        return;
+    }
+
+    font = TTF_OpenFont("assets/sansserif.ttf", 24); // Adjust path and size as needed
+    if (!font) {
+        std::cerr << "Failed to load font! TTF_Error: " << TTF_GetError() << std::endl;
+        isRunning = false;
+        return;
+    }
+
 
     int splashWidth = splashSurface->w;
     int splashHeight = splashSurface->h;
@@ -139,14 +158,54 @@ void Game::render() {
 
     // Render the board on the left side
     board.render(renderer, 0, 0, boardSize);
-
+    
     // Render info bar (dark gray area)
     SDL_Rect infoBar = {boardSize, 0, windowWidth - boardSize, windowHeight};
     SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);  // Dark gray for info bar
     SDL_RenderFillRect(renderer, &infoBar);
 
+    // Draw dark blue rectangle for title background
+    SDL_Rect titleBackground = {boardSize, 0, windowWidth - boardSize, 50}; // Adjust height as needed
+    SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Dark blue color
+    SDL_RenderFillRect(renderer, &titleBackground);
+
+    // Render the title text
+    renderText("Chess 2D SDL2", boardSize + 10, 10); // Adjust position as needed
+
+
     SDL_RenderPresent(renderer);
 }
+
+void Game::renderText(const std::string& message, int x, int y) {
+    SDL_Color textColor = {255, 255, 255}; // White color
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, message.c_str(), textColor);
+    if (!textSurface) {
+        std::cerr << "Unable to render text surface! TTF_Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (!textTexture) {
+        std::cerr << "Unable to create texture from rendered text! SDL_Error: " << SDL_GetError() << std::endl;
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+
+    // Get width and height of the texture
+    int width = textSurface->w;
+    int height = textSurface->h;
+
+    // Set up destination rectangle for rendering
+    SDL_Rect renderQuad = {x, y, width, height};
+
+    // Draw the texture
+    SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+
+    // Clean up
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
+}
+
 
 
 

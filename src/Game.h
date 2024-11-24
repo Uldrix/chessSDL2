@@ -36,6 +36,7 @@
 #pragma once
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include "Board.h"
 
 class Game {
@@ -53,8 +54,11 @@ private:
     void update();
     void render();
     void cleanup();
+    void renderText(const std::string& message, int x, int y);
 
     Uint32 lastUpdateTime;
+
+    TTF_Font* font;
 
     SDL_Window* window;
     SDL_Renderer* renderer;
